@@ -206,7 +206,7 @@ Hereby $$lr_{\lambda}$$ is the learning rate for the Lagrangian multiplier. The 
 
 Actor-Critic based approaches such as [PPO](https://spinningup.openai.com/en/latest/algorithms/ppo.html) <d-cite key="Schulman2017PPO"></d-cite> have empirically been shown to compete at the top of a plethora of quality benchmarks.
 In this class of algorithms, the actor learns a policy $$\pi$$, whereas the critic learns the value function using temporal difference learning.
-Intuitively, using the critic reduced the variance and enabled training using a finite number of samples.
+Using the critic reduced the variance and __enabled training using a finite number of samples__.
 
 ### How to integrate the constraint into the Actor-Critic approach?
 
@@ -231,7 +231,7 @@ $$
   \hat{r} = r(s,a) - \lambda c(s,a)
 $$
 
-Finally, we can compute the gradient of the Lagrangian in line 11 and update $$\lambda$$ in line 14 as discussed in the previous section and repeat the whole process for $$K$$ times.
+Finally, we can compute the gradient of the Lagrangian in line 11 and update $$\lambda$$ in line 14 as discussed in the previous section and repeat the whole process for $$K$$ iterations.
 
 # Implementation
 
@@ -285,7 +285,7 @@ self.rollout_buffer.constraint_lambda = np.maximum(
 
 # Experiments
 
-As a proof-of-the-principle experiment, we reproduced the HalfCheetah task in [OpenAI MuJoCo Gym](https://gymnasium.farama.org/environments/mujoco/) from Tessler C. et al.<d-cite key="Tessler2018RCPO"></d-cite>.
+As a proof-of-the-principle experiment, we reproduced the results of the [OpenAI HalfCheetah environment](https://gymnasium.farama.org/environments/mujoco/) from Tessler C. et al.<d-cite key="Tessler2018RCPO"></d-cite>.
 
 The results of the experiments are shown in the following figures. We kept (almost) all hyperparameters the same as in the original paper and let the agents train for $$1,000,000$$ time steps.
 
@@ -302,12 +302,12 @@ The results demonstrate that the RCPPO trained an agent that successfully walked
 respecting the safety constraint. 
 We achieved comparable results to the original experiments in the paper. \\
 Interestingly, low $$\lambda$$ values seem to be less stable than higher $$\lambda$$ values. 
-The guiding penalty appears to enforce the constraint and improve the learning process overall. They limit the amount of torque the agent is allowed to apply, hinder the exploration of unsafe and poor-performing local minima and guide the policy to a safe and more optimal solution. \\
+The guiding penalty appears to enforce the constraint and improve the learning process overall. It limits the amount of torque the agent is allowed to apply, hinders the exploration of unsafe and poor-performing local minima and guides the policy to a safe and more optimal solution. \\
 Nevertheless, the poor performance of the unconstrained agents may be due to the neural network architecture being relatively small (i.e., 2 layers of 64 hidden units).
 
 ### Qualitative observations
 
-Finally ,let's see how our HalfCheetah agents walk under the 
+Finally, let's see how our HalfCheetah agents walk under the attempt to enforced constraint.
 To do so, we have recorded videos of the agents walking forward with different $$\lambda$$ values.
 The results can be seen below.
 
@@ -329,16 +329,16 @@ Furthermore, the RCPPO agent walks perfectly, whilst the other (moving) agents t
 
 ### Theoretical assumptions vs. empirical results
 
-We had to select higher values for the Lagrangian multiplier than what were used in the original paper.
+We had to select higher values for the Lagrangian multiplier than were used in the original paper.
 In the paper, a $$\lambda$$ value of 0.1 is already very high as it leads to a reward of $$-0.4$$ and torque of $$0.1387$$, whereas in our case a $$\lambda$$ value of $$1.0$$ leads to a reward of about $$1 500$$ with an average torque of $$0.39$$. \\
-This affected the reward shaping process but also meant we had to increase the Lagrangian's respective learning rate when training it as a parameter to grow quicker.
+This affected the reward shaping process but also meant we had to increase the Lagrangian's respective learning rate so it can grow quicker when training it as a parameter.
 As a result, $$lr_{\lambda}$$ becomes larger than $$lr_{\pi}$$, which __ignores one of the assumptions made in the paper__, yet leads to coherent results.
 
 A possible reason for the slower and weaker impact of the constraint could be attributed to the clipping of the trust region. This technique ensures that the policy does not change too much between updates and prevents it from landing in a bad local minimum that it can not escape.
 This is done by clipping the policy update to a specific range.
-Therefore, even with "high" values of lambda w.r.t. the original paper, the policy will not change significantly to conform to the constraint.
+Therefore, even with "high" values of lambda w.r.t. the original paper, the policy will not change significantly with each update to conform to the constraint.
 
-Not only did we have to select a higher learning rate for the Lagrangian, but we also did not include different learning rates for the policy and the value function, __ignoring the three times scales approach__ proposed in the original paper. Additionally, in the original paper the RCPPO algorithm updated their networks (actor and critic) after each episode. In our implementation, we need to fill the rollout buffer with potentially multiple episodes, thus reducing the frequency of network parameters and Lagrangian updates. Nevertheless, the PPO algorithm implements a parameter update loop of n epochs after each rollout, which to a degree counteracts the discussed lower update frequency of all parameters.
+Not only did we have to select a higher learning rate for the Lagrangian, but we also did not include different learning rates for the policy and the value function, __ignoring the three times scales approach__ proposed in the original paper. Additionally, in the original paper, the RCPPO algorithm updated their networks (actor and critic) after each episode. In our implementation, we need to fill the rollout buffer with potentially multiple episodes, thus reducing the frequency of network parameters and Lagrangian updates. Nevertheless, the PPO algorithm implements a parameter update loop of $$N$$ epochs after each rollout, which to a degree, counteracts the discussed lower update frequency of all parameters.
 
 ### Conclusion
 
